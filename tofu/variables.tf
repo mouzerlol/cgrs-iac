@@ -46,11 +46,11 @@ variable "cloudflare_zone_id" {
 variable "r2_buckets" {
   description = "List of R2 bucket configurations"
   type = list(object({
-    name             = string
-    description      = optional(string, "")
-    versioning       = optional(bool, true)
-    website_enabled  = optional(bool, false)
-    tags             = optional(map(string), {})
+    name            = string
+    description     = optional(string, "")
+    versioning      = optional(bool, true)
+    website_enabled = optional(bool, false)
+    tags            = optional(map(string), {})
   }))
   default = []
 }

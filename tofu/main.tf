@@ -24,7 +24,7 @@ provider "aws" {
   skip_metadata_api_check     = true
   skip_requesting_account_id  = true
 
-  s3_use_path_style           = true
+  s3_use_path_style = true
 }
 
 provider "cloudflare" {
@@ -57,7 +57,7 @@ module "r2_buckets" {
 module "dns_records" {
   source = "../modules/cloudflare-dns"
 
-  enabled   = true
-  zone_id   = var.cloudflare_zone_id
-  records   = var.dns_records
+  enabled = true
+  zone_id = var.cloudflare_zone_id
+  records = var.dns_records
 }

@@ -8,9 +8,9 @@ output "r2_buckets" {
   value = {
     for name, bucket in module.r2_buckets :
     name => {
-      id              = bucket.bucket_id
-      arn             = bucket.bucket_arn
-      domain_name     = bucket.bucket_domain_name
+      id               = bucket.bucket_id
+      arn              = bucket.bucket_arn
+      domain_name      = bucket.bucket_domain_name
       website_endpoint = bucket.website_endpoint
     }
   }

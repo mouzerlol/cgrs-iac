@@ -16,5 +16,5 @@ output "record_fqdns" {
 
 output "records_created" {
   description = "Number of records created"
-  value = var.enabled ? length(cloudflare_record.this) : 0
+  value       = var.enabled ? length(cloudflare_record.this) : 0
 }
