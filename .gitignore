@@ -1,0 +1,43 @@
+# Terraform/OpenTofu state
+.tofu/
+*.tfstate
+*.tfstate.*
+.tfplan
+*.tfbackend
+
+# Lock files (keep tofu.lock for reproducible builds)
+# tofu.lock is committed
+# *.lock.hcl is not
+
+# Environment-specific files (keep templates)
+environments/*/.env
+environments/*/.env.local
+environments/*/.env.*.local
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+*.iml
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local testing
+*.tmp
+*.temp
