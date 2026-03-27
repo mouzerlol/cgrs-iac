@@ -1,7 +1,7 @@
 .PHONY: help init plan apply validate fmt check clean
 
 # Default environment if not specified
-ENV ?= dev
+ENV ?= prod
 
 # Directories
 ENV_DIR := environments/$(ENV)
@@ -10,7 +10,7 @@ TOFU_DIR := tofu
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf " %-20s %s\n", $$1, $$2}'
 
-init: ## Initialize OpenTofu for environment (ENV=dev|prod)
+init: ## Initialize OpenTofu for environment (ENV=prod)
 	@if [ ! -d "$(ENV_DIR)" ]; then \
 		echo "Error: Environment '$(ENV)' not found at $(ENV_DIR)"; \
 		exit 1; \
@@ -19,19 +19,19 @@ init: ## Initialize OpenTofu for environment (ENV=dev|prod)
 		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
 		-backend-config=path=$(ENV)/cgrs.tfstate
 
-plan: ## Run OpenTofu plan for environment (ENV=dev|prod)
+plan: ## Run OpenTofu plan for environment (ENV=prod)
 	cd $(TOFU_DIR) && tofu plan \
 		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
 		-var-file=../$(ENV_DIR)/$(ENV).tfvars \
 		-out=../$(ENV_DIR)/$(ENV).tfplan
 
-apply: ## Apply OpenTofu changes for environment (ENV=dev|prod)
+apply: ## Apply OpenTofu changes for environment (ENV=prod)
 	cd $(TOFU_DIR) && tofu apply \
 		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
 		-var-file=../$(ENV_DIR)/$(ENV).tfvars \
 		../$(ENV_DIR)/$(ENV).tfplan
 
-destroy: ## Destroy resources for environment (ENV=dev|prod)
+destroy: ## Destroy resources for environment (ENV=prod)
 	cd $(TOFU_DIR) && tofu destroy \
 		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
 		-var-file=../$(ENV_DIR)/$(ENV).tfvars
