@@ -48,6 +48,7 @@ jobs:
       - name: Validate
         run: |
           cd tofu
+          tofu init -backend=false
           tofu validate
 
   plan-prod:

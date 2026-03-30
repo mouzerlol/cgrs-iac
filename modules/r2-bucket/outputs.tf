@@ -1,29 +1,9 @@
-output "bucket_id" {
+output "id" {
   description = "ID of the R2 bucket"
-  value       = var.enabled ? aws_s3_bucket.this[0].id : null
+  value       = cloudflare_r2_bucket.this.id
 }
 
-output "bucket_arn" {
-  description = "ARN of the R2 bucket"
-  value       = var.enabled ? aws_s3_bucket.this[0].arn : null
-}
-
-output "bucket_name" {
-  description = "Name of the R2 bucket"
-  value       = var.enabled ? aws_s3_bucket.this[0].bucket : null
-}
-
-output "bucket_domain_name" {
-  description = "Domain name of the R2 bucket"
-  value       = var.enabled ? aws_s3_bucket.this[0].bucket_domain_name : null
-}
-
-output "bucket_regional_domain_name" {
-  description = "Regional domain name of the R2 bucket"
-  value       = var.enabled ? aws_s3_bucket.this[0].bucket_regional_domain_name : null
-}
-
-output "website_endpoint" {
-  description = "Website endpoint (if website hosting is enabled)"
-  value       = var.enabled && var.website_enabled ? aws_s3_bucket_website_configuration.this[0].website_endpoint : null
+output "cors_configured" {
+  description = "Whether a cloudflare_r2_bucket_cors resource was applied"
+  value       = length(var.cors_rules) > 0
 }

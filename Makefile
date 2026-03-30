@@ -1,4 +1,4 @@
-.PHONY: help init plan apply validate fmt check clean
+.PHONY: help init plan apply apply-saved destroy validate fmt check clean clean-plan
 
 # Default environment if not specified
 ENV ?= prod
@@ -11,32 +11,33 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf " %-20s %s\n", $$1, $$2}'
 
 init: ## Initialize OpenTofu for environment (ENV=prod)
-	@if [ ! -d "$(ENV_DIR)" ]; then \
-		echo "Error: Environment '$(ENV)' not found at $(ENV_DIR)"; \
-		exit 1; \
-	fi
-	cd $(TOFU_DIR) && tofu init \
-		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
-		-backend-config=path=$(ENV)/cgrs.tfstate
+	@set -a && . environments/$(ENV)/.envrc && set +a && \
+	cd $(TOFU_DIR) && tofu init -backend-config=../$(ENV_DIR)/$(ENV).tfbackend -reconfigure
 
-plan: ## Run OpenTofu plan for environment (ENV=prod)
+plan: ## Run OpenTofu plan for environment (ENV=prod); saves plan to $(ENV).tfplan
+	@set -a && . environments/$(ENV)/.envrc && set +a && \
 	cd $(TOFU_DIR) && tofu plan \
-		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
 		-var-file=../$(ENV_DIR)/$(ENV).tfvars \
 		-out=../$(ENV_DIR)/$(ENV).tfplan
 
-apply: ## Apply OpenTofu changes for environment (ENV=prod)
+apply: ## Apply OpenTofu changes (interactive; uses current state, not a saved plan file)
+	@set -a && . environments/$(ENV)/.envrc && set +a && \
 	cd $(TOFU_DIR) && tofu apply \
-		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
+		-var-file=../$(ENV_DIR)/$(ENV).tfvars
+
+apply-saved: ## Apply the saved plan from make plan (if "Saved plan is stale", run make plan again)
+	@set -a && . environments/$(ENV)/.envrc && set +a && \
+	cd $(TOFU_DIR) && tofu apply \
 		-var-file=../$(ENV_DIR)/$(ENV).tfvars \
 		../$(ENV_DIR)/$(ENV).tfplan
 
 destroy: ## Destroy resources for environment (ENV=prod)
+	@set -a && . environments/$(ENV)/.envrc && set +a && \
 	cd $(TOFU_DIR) && tofu destroy \
-		-backend-config=../$(ENV_DIR)/$(ENV).tfbackend \
 		-var-file=../$(ENV_DIR)/$(ENV).tfvars
 
 validate: ## Validate OpenTofu configurations
+	@set -a && . environments/$(ENV)/.envrc && set +a && \
 	cd $(TOFU_DIR) && tofu validate
 
 fmt: ## Format OpenTofu code
@@ -44,6 +45,9 @@ fmt: ## Format OpenTofu code
 	@find . -name "*.tf" -o -name "*.tfvars" | xargs tofu fmt
 
 check: fmt validate ## Run all quality checks (fmt + validate)
+
+clean-plan: ## Remove saved plan file for ENV (optional; does not change remote state)
+	rm -f $(ENV_DIR)/$(ENV).tfplan
 
 clean: ## Clean up generated files
 	rm -rf $(TOFU_DIR)/.tofu
