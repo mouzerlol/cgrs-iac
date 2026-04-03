@@ -29,12 +29,12 @@ variable "routing_rules" {
 variable "cors_rules" {
   description = "Browser CORS rules for direct uploads and GETs (e.g. presigned PUT/GET from the web app). Empty list skips cloudflare_r2_bucket_cors."
   type = list(object({
-    allowed_origins   = list(string)
-    allowed_methods   = list(string)
-    allowed_headers   = optional(list(string), ["Content-Type"])
-    expose_headers    = optional(list(string), ["ETag", "Content-Length"])
-    max_age_seconds   = optional(number, 3600)
-    rule_id           = optional(string)
+    allowed_origins = list(string)
+    allowed_methods = list(string)
+    allowed_headers = optional(list(string), ["Content-Type"])
+    expose_headers  = optional(list(string), ["ETag", "Content-Length"])
+    max_age_seconds = optional(number, 3600)
+    rule_id         = optional(string)
   }))
   default = []
 }

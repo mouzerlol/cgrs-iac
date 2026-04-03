@@ -46,12 +46,12 @@ variable "r2_buckets" {
     description     = optional(string, "")
     website_enabled = optional(bool, false)
     cors_rules = optional(list(object({
-      allowed_origins   = list(string)
-      allowed_methods   = list(string)
-      allowed_headers   = optional(list(string), ["Content-Type"])
-      expose_headers    = optional(list(string), ["ETag", "Content-Length"])
-      max_age_seconds   = optional(number, 3600)
-      rule_id           = optional(string)
+      allowed_origins = list(string)
+      allowed_methods = list(string)
+      allowed_headers = optional(list(string), ["Content-Type"])
+      expose_headers  = optional(list(string), ["ETag", "Content-Length"])
+      max_age_seconds = optional(number, 3600)
+      rule_id         = optional(string)
     })), [])
   }))
   default = []
@@ -61,4 +61,32 @@ variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
   default     = {}
+}
+
+variable "turnstile_enabled" {
+  description = "Enable Cloudflare Turnstile CAPTCHA"
+  type        = bool
+  default     = true
+}
+
+variable "turnstile_name" {
+  description = "Name for the Turnstile widget"
+  type        = string
+  default     = "CGRS Management Request"
+}
+
+variable "turnstile_domains" {
+  description = "Domains for Turnstile widget (including localhost for dev)"
+  type        = list(string)
+  default     = ["cgrs.co.nz", "localhost"]
+}
+
+variable "turnstile_mode" {
+  description = "Turnstile widget mode: non-interactive, invisible, or managed"
+  type        = string
+  default     = "managed"
+  validation {
+    condition     = contains(["non-interactive", "invisible", "managed"], var.turnstile_mode)
+    error_message = "Mode must be one of: non-interactive, invisible, managed"
+  }
 }

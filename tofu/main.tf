@@ -41,8 +41,19 @@ module "r2_buckets" {
 
   for_each = { for bucket in var.r2_buckets : bucket.name => bucket }
 
-  enabled         = true
-  bucket_name     = each.value.name
-  account_id      = var.cloudflare_account_id
-  cors_rules      = try(each.value.cors_rules, [])
+  enabled     = true
+  bucket_name = each.value.name
+  account_id  = var.cloudflare_account_id
+  cors_rules  = try(each.value.cors_rules, [])
+}
+
+module "turnstile" {
+  source = "../modules/turnstile"
+
+  count = var.turnstile_enabled ? 1 : 0
+
+  account_id = var.cloudflare_account_id
+  name       = var.turnstile_name
+  domains    = var.turnstile_domains
+  mode       = var.turnstile_mode
 }
