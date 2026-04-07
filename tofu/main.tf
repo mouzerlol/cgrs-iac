@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/cloudflare"
       version = "~> 5.0"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 6.0"
+    }
   }
 }
 
@@ -36,6 +40,13 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
+# GCP provider — uses Application Default Credentials (gcloud auth application-default login).
+# No explicit credentials needed; ADC is picked up automatically.
+provider "google" {
+  project = var.gcp_project_id
+  region  = var.gcp_region
+}
+
 module "r2_buckets" {
   source = "../modules/r2-bucket"
 
@@ -56,4 +67,55 @@ module "turnstile" {
   name       = var.turnstile_name
   domains    = var.turnstile_domains
   mode       = var.turnstile_mode
+}
+
+module "artifact_registry" {
+  source = "../modules/artifact-registry"
+
+  count = var.artifact_registry_enabled ? 1 : 0
+
+  project_id           = var.gcp_project_id
+  location             = var.gcp_region
+  repository_id        = var.artifact_registry_repository_id
+  description          = "CGRS API container images"
+  labels               = var.tags
+  cleanup_max_versions = var.artifact_registry_max_versions
+}
+
+module "cloud_run_api" {
+  source = "../modules/cloud-run"
+
+  count = var.cloud_run_enabled ? 1 : 0
+
+  project_id   = var.gcp_project_id
+  location     = var.gcp_region
+  service_name = var.cloud_run_service_name
+  image        = var.cloud_run_image
+  labels       = var.tags
+
+  # Scaling — free tier friendly
+  min_instances = var.cloud_run_min_instances
+  max_instances = var.cloud_run_max_instances
+  cpu           = var.cloud_run_cpu
+  memory        = var.cloud_run_memory
+
+  # Public API
+  allow_unauthenticated = true
+
+  # Non-sensitive env vars
+  env_vars = {
+    APP_NAME                = "CGRS API"
+    APP_VERSION             = "0.1.0"
+    DEBUG                   = "false"
+    LOG_LEVEL               = "INFO"
+    DATABASE_ECHO           = "false"
+    TENANT_DEV_BYPASS       = "false"
+    ALLOW_DEV_BYPASS        = "false"
+    R2_BUCKET_NAME          = "cgrs-images-prod"
+    CORS_ORIGINS            = var.cloud_run_cors_origins
+    UVICORN_WORKERS         = "2"
+  }
+
+  # Sensitive env vars — values come from .envrc via TF_VAR_*
+  secret_env_vars = var.cloud_run_secret_env_vars
 }

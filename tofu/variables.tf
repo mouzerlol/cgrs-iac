@@ -58,10 +58,102 @@ variable "r2_buckets" {
 }
 
 variable "tags" {
-  description = "Common tags to apply to all resources"
+  description = "Common tags/labels to apply to all resources"
   type        = map(string)
   default     = {}
 }
+
+# --- GCP ---
+
+variable "gcp_project_id" {
+  description = "GCP project ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "gcp_region" {
+  description = "GCP region for resources"
+  type        = string
+  default     = "australia-southeast1"
+}
+
+# --- Artifact Registry ---
+
+variable "artifact_registry_enabled" {
+  description = "Enable GCP Artifact Registry"
+  type        = bool
+  default     = true
+}
+
+variable "artifact_registry_repository_id" {
+  description = "Repository ID for the container registry"
+  type        = string
+  default     = "cgrs-api"
+}
+
+variable "artifact_registry_max_versions" {
+  description = "Maximum image versions to retain per package (cleanup policy)"
+  type        = number
+  default     = 5
+}
+
+# --- Cloud Run ---
+
+variable "cloud_run_enabled" {
+  description = "Enable Cloud Run API service"
+  type        = bool
+  default     = true
+}
+
+variable "cloud_run_service_name" {
+  description = "Name of the Cloud Run service"
+  type        = string
+  default     = "cgrs-api"
+}
+
+variable "cloud_run_image" {
+  description = "Container image URL (REGION-docker.pkg.dev/PROJECT/REPO/IMAGE:TAG)"
+  type        = string
+}
+
+variable "cloud_run_min_instances" {
+  description = "Minimum instances (0 = scale to zero for free tier)"
+  type        = number
+  default     = 0
+}
+
+variable "cloud_run_max_instances" {
+  description = "Maximum instances"
+  type        = number
+  default     = 2
+}
+
+variable "cloud_run_cpu" {
+  description = "CPU allocation per instance"
+  type        = string
+  default     = "1"
+}
+
+variable "cloud_run_memory" {
+  description = "Memory allocation per instance"
+  type        = string
+  default     = "512Mi"
+}
+
+variable "cloud_run_cors_origins" {
+  description = "Comma-separated CORS origins for the API"
+  type        = string
+  default     = "https://cgrs.co.nz"
+}
+
+variable "cloud_run_secret_env_vars" {
+  description = "Sensitive environment variables for the API (DATABASE_URL, API keys, etc.)"
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+# --- Turnstile ---
 
 variable "turnstile_enabled" {
   description = "Enable Cloudflare Turnstile CAPTCHA"

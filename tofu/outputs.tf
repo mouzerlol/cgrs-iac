@@ -19,7 +19,24 @@ output "providers" {
   value = {
     aws        = "~> 4.67"
     cloudflare = "~> 5.0"
+    google     = "~> 6.0"
   }
+}
+
+output "artifact_registry_url" {
+  description = "Docker push/pull URL for the Artifact Registry repository"
+  value       = var.artifact_registry_enabled ? one(module.artifact_registry[*].repository_url) : null
+  sensitive   = true
+}
+
+output "cloud_run_url" {
+  description = "The public URL of the Cloud Run API service"
+  value       = var.cloud_run_enabled ? one(module.cloud_run_api[*].service_url) : null
+}
+
+output "cloud_run_revision" {
+  description = "The latest ready revision of the Cloud Run service"
+  value       = var.cloud_run_enabled ? one(module.cloud_run_api[*].latest_revision) : null
 }
 
 output "turnstile_site_key" {

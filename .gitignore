@@ -11,7 +11,7 @@
 # *.lock.hcl is not
 
 # Environment-specific files (keep templates)
-environments/*/.env
+environments/*/.env*
 environments/*/.env.local
 environments/*/.env.*.local
 
@@ -43,3 +43,4 @@ yarn-error.log*
 *.tmp
 *.temp
 *.tfplan
+.envrc
