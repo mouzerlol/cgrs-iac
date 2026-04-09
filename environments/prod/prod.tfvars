@@ -14,7 +14,13 @@ r2_buckets = [
     cors_rules = [
       {
         rule_id         = "cgrs-web-app-origins"
-        allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "https://localhost:3000", "https://cgrs.co.nz"]
+        allowed_origins = [
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+          "https://localhost:3000",
+          "https://cgrs.co.nz",
+          "https://www.cgrs.co.nz",
+        ]
         allowed_methods = ["GET", "PUT", "HEAD"]
         allowed_headers = ["*"]
         expose_headers  = ["ETag", "Content-Length"]

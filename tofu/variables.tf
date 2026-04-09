@@ -168,9 +168,9 @@ variable "turnstile_name" {
 }
 
 variable "turnstile_domains" {
-  description = "Domains for Turnstile widget (including localhost for dev)"
+  description = "Hostnames where the Turnstile widget is embedded (each hostname must be listed; www is not implied)."
   type        = list(string)
-  default     = ["cgrs.co.nz", "localhost"]
+  default     = ["cgrs.co.nz", "www.cgrs.co.nz", "localhost"]
 }
 
 variable "turnstile_mode" {
