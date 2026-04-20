@@ -1,7 +1,7 @@
 environment = "prod"
 
 # GCP — must match the project shown in Cloud Console (name "cgrs" → project id cgrs-492610)
-gcp_project_id = "cgrs-492610"
+gcp_project_id  = "cgrs-492610"
 cloud_run_image = "australia-southeast1-docker.pkg.dev/cgrs-492610/cgrs-api/cgrs-api:latest"
 
 # R2 Bucket Configuration
@@ -13,7 +13,7 @@ r2_buckets = [
     # Note: OPTIONS is not needed in allowed_methods - CORS preflight is handled automatically.
     cors_rules = [
       {
-        rule_id         = "cgrs-web-app-origins"
+        rule_id = "cgrs-web-app-origins"
         allowed_origins = [
           "http://localhost:3000",
           "http://127.0.0.1:3000",
@@ -36,13 +36,17 @@ artifact_registry_repository_id = "cgrs-api"
 artifact_registry_max_versions  = 5
 
 # Cloud Run
-cloud_run_enabled      = true
-cloud_run_service_name = "cgrs-api"
+cloud_run_enabled       = true
+cloud_run_service_name  = "cgrs-api"
 cloud_run_min_instances = 0
 cloud_run_max_instances = 2
-cloud_run_cpu          = "1"
-cloud_run_memory       = "512Mi"
-cloud_run_cors_origins = "https://www.cgrs.co.nz,https://cgrs.co.nz,http://localhost:3000"
+cloud_run_cpu           = "1"
+cloud_run_memory        = "512Mi"
+cloud_run_cors_origins  = "https://www.cgrs.co.nz,https://cgrs.co.nz,http://localhost:3000"
+
+# Cloudflare Worker API proxy (optional DNS — set zone_id from zone Overview → API; enable after Worker route exists if not using dashboard-only DNS)
+cloudflare_zone_id                 = ""
+cloudflare_api_proxy_dns_enabled   = false
 
 # Common tags/labels
 tags = {

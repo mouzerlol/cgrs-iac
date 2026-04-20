@@ -39,6 +39,11 @@ output "cloud_run_revision" {
   value       = var.cloud_run_enabled ? one(module.cloud_run_api[*].latest_revision) : null
 }
 
+output "cloudflare_api_proxy_dns_records" {
+  description = "FQDNs for api proxy DNS records when cloudflare_api_proxy_dns_enabled is true"
+  value       = length(module.cloudflare_dns_api_proxy) > 0 ? module.cloudflare_dns_api_proxy[0].record_fqdns : null
+}
+
 output "turnstile_site_key" {
   description = "Cloudflare Turnstile site key (public)"
   value       = var.turnstile_enabled ? one(module.turnstile[*].site_key) : null

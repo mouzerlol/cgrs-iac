@@ -69,6 +69,26 @@ module "turnstile" {
   mode       = var.turnstile_mode
 }
 
+# Optional: proxied DNS for api.cgrs.co.nz (Worker route in Wrangler). Omit if the Worker custom domain creates DNS automatically.
+module "cloudflare_dns_api_proxy" {
+  source = "../modules/cloudflare-dns"
+
+  count = var.cloudflare_api_proxy_dns_enabled && var.cloudflare_zone_id != "" ? 1 : 0
+
+  enabled = true
+  zone_id = var.cloudflare_zone_id
+  records = [
+    {
+      name        = "api"
+      type        = "AAAA"
+      content     = "100::"
+      ttl         = 1
+      proxied     = true
+      description = "Worker reverse proxy to Cloud Run (synthetic AAAA; traffic served at Cloudflare edge)"
+    }
+  ]
+}
+
 module "artifact_registry" {
   source = "../modules/artifact-registry"
 
@@ -104,16 +124,16 @@ module "cloud_run_api" {
 
   # Non-sensitive env vars
   env_vars = {
-    APP_NAME                = "CGRS API"
-    APP_VERSION             = "0.1.0"
-    DEBUG                   = "false"
-    LOG_LEVEL               = "INFO"
-    DATABASE_ECHO           = "false"
-    TENANT_DEV_BYPASS       = "false"
-    ALLOW_DEV_BYPASS        = "false"
-    R2_BUCKET_NAME          = "cgrs-images-prod"
-    CORS_ORIGINS            = var.cloud_run_cors_origins
-    UVICORN_WORKERS         = "2"
+    APP_NAME          = "CGRS API"
+    APP_VERSION       = "0.1.0"
+    DEBUG             = "false"
+    LOG_LEVEL         = "INFO"
+    DATABASE_ECHO     = "false"
+    TENANT_DEV_BYPASS = "false"
+    ALLOW_DEV_BYPASS  = "false"
+    R2_BUCKET_NAME    = "cgrs-images-prod"
+    CORS_ORIGINS      = var.cloud_run_cors_origins
+    UVICORN_WORKERS   = "2"
   }
 
   # Sensitive env vars — values come from .envrc via TF_VAR_*
