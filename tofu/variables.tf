@@ -39,18 +39,6 @@ variable "cloudflare_api_token" {
   sensitive   = true
 }
 
-variable "cloudflare_zone_id" {
-  description = "Cloudflare zone ID for cgrs.co.nz (zone Overview → API). Empty skips Terraform-managed DNS for api.cgrs.co.nz."
-  type        = string
-  default     = ""
-}
-
-variable "cloudflare_api_proxy_dns_enabled" {
-  description = "When true and cloudflare_zone_id is non-empty, create proxied api hostname (AAAA 100::) for Cloudflare Worker reverse proxy."
-  type        = bool
-  default     = false
-}
-
 variable "r2_buckets" {
   description = "List of R2 bucket configurations"
   type = list(object({

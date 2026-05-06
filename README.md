@@ -1,6 +1,6 @@
 # CGRS Infrastructure as Code
 
-OpenTofu infrastructure for the CGRS project, managing Cloudflare R2 storage and DNS.
+OpenTofu infrastructure for the CGRS project, managing Cloudflare R2 storage.
 
 ## Prerequisites
 
@@ -17,8 +17,7 @@ cgrs-iac/
 │   ├── dev/              # Development environment
 │   └── prod/             # Production environment
 ├── modules/              # Reusable modules
-│   ├── r2-bucket/        # R2 bucket module
-│   └── cloudflare-dns/   # Cloudflare DNS module
+│   └── r2-bucket/        # R2 bucket module
 ├── tofu/                 # Root configuration
 ├── .github/workflows/    # CI/CD pipelines
 └── Makefile             # Development tasks
@@ -114,13 +113,6 @@ Creates R2 buckets with:
 - Versioning (optional)
 - Public access blocking
 - Static website hosting (optional)
-
-### Cloudflare DNS (`modules/cloudflare-dns/`)
-
-Creates DNS records with:
-- Support for A, CNAME, MX, TXT, and other record types
-- Cloudflare proxying (proxied/non-proxied)
-- TTL configuration
 
 ## CI/CD
 

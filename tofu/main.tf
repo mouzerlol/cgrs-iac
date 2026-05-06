@@ -69,26 +69,6 @@ module "turnstile" {
   mode       = var.turnstile_mode
 }
 
-# Optional: proxied DNS for api.cgrs.co.nz (Worker route in Wrangler). Omit if the Worker custom domain creates DNS automatically.
-module "cloudflare_dns_api_proxy" {
-  source = "../modules/cloudflare-dns"
-
-  count = var.cloudflare_api_proxy_dns_enabled && var.cloudflare_zone_id != "" ? 1 : 0
-
-  enabled = true
-  zone_id = var.cloudflare_zone_id
-  records = [
-    {
-      name        = "api"
-      type        = "AAAA"
-      content     = "100::"
-      ttl         = 1
-      proxied     = true
-      description = "Worker reverse proxy to Cloud Run (synthetic AAAA; traffic served at Cloudflare edge)"
-    }
-  ]
-}
-
 module "artifact_registry" {
   source = "../modules/artifact-registry"
 

@@ -42,11 +42,8 @@ cloud_run_min_instances = 0
 cloud_run_max_instances = 2
 cloud_run_cpu           = "1"
 cloud_run_memory        = "512Mi"
-cloud_run_cors_origins  = "https://www.cgrs.co.nz,https://cgrs.co.nz,http://localhost:3000"
-
-# Cloudflare Worker API proxy (optional DNS — set zone_id from zone Overview → API; enable after Worker route exists if not using dashboard-only DNS)
-cloudflare_zone_id                 = ""
-cloudflare_api_proxy_dns_enabled   = false
+# Browser Origins for credentialed CORS (must match the page URL exactly, not the API host). Include 127.0.0.1 for local UI against prod API.
+cloud_run_cors_origins  = "https://www.cgrs.co.nz,https://cgrs.co.nz,http://localhost:3000,http://127.0.0.1:3000"
 
 # Common tags/labels
 tags = {
