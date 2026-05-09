@@ -119,3 +119,22 @@ module "cloud_run_api" {
   # Sensitive env vars — values come from .envrc via TF_VAR_*
   secret_env_vars = var.cloud_run_secret_env_vars
 }
+
+module "cloud_run_scheduler" {
+  source = "../modules/cloud-run-scheduler"
+
+  count = var.cloud_run_enabled && var.cloud_run_scheduler_enabled ? 1 : 0
+
+  project_id   = var.gcp_project_id
+  location     = var.gcp_region
+  service_name = var.cloud_run_service_name
+
+  warm_min_instances = var.cloud_run_warm_min_instances
+  scale_up_cron      = var.cloud_run_scale_up_cron
+  scale_down_cron    = var.cloud_run_scale_down_cron
+  time_zone          = var.cloud_run_schedule_timezone
+
+  labels = var.tags
+
+  depends_on = [module.cloud_run_api]
+}

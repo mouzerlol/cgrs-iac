@@ -43,7 +43,15 @@ cloud_run_max_instances = 2
 cloud_run_cpu           = "1"
 cloud_run_memory        = "512Mi"
 # Browser Origins for credentialed CORS (must match the page URL exactly, not the API host). Include 127.0.0.1 for local UI against prod API.
-cloud_run_cors_origins  = "https://www.cgrs.co.nz,https://cgrs.co.nz,http://localhost:3000,http://127.0.0.1:3000"
+cloud_run_cors_origins = "https://www.cgrs.co.nz,https://cgrs.co.nz,http://localhost:3000,http://127.0.0.1:3000"
+
+# Scheduled scaling — keep one warm instance during NZ waking hours, scale to zero overnight.
+# Set cloud_run_scheduler_enabled = false to disable during incidents (operator owns min_instances thereafter).
+cloud_run_scheduler_enabled  = true
+cloud_run_warm_min_instances = 1
+cloud_run_scale_up_cron      = "0 6 * * *"
+cloud_run_scale_down_cron    = "0 23 * * *"
+cloud_run_schedule_timezone  = "Pacific/Auckland"
 
 # Common tags/labels
 tags = {

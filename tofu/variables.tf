@@ -153,6 +153,38 @@ variable "cloud_run_secret_env_vars" {
   sensitive   = true
 }
 
+# --- Cloud Run Scheduled Scaling ---
+
+variable "cloud_run_scheduler_enabled" {
+  description = "Enable scheduled min_instance_count adjustments via Cloud Scheduler"
+  type        = bool
+  default     = true
+}
+
+variable "cloud_run_warm_min_instances" {
+  description = "Min instance count to maintain during the warm window (NZ business hours)"
+  type        = number
+  default     = 1
+}
+
+variable "cloud_run_scale_up_cron" {
+  description = "Cron expression for the warm-window start, in cloud_run_schedule_timezone"
+  type        = string
+  default     = "0 6 * * *"
+}
+
+variable "cloud_run_scale_down_cron" {
+  description = "Cron expression for the warm-window end, in cloud_run_schedule_timezone"
+  type        = string
+  default     = "0 23 * * *"
+}
+
+variable "cloud_run_schedule_timezone" {
+  description = "IANA time zone for scheduled scaling jobs. Pacific/Auckland is DST-aware."
+  type        = string
+  default     = "Pacific/Auckland"
+}
+
 # --- Turnstile ---
 
 variable "turnstile_enabled" {

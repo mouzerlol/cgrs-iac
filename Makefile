@@ -1,4 +1,5 @@
-.PHONY: help init plan apply apply-saved destroy validate fmt check clean clean-plan
+.PHONY: help init plan apply apply-saved destroy validate fmt check clean clean-plan \
+        scheduler-trigger-up scheduler-trigger-down cloud-run-min-instances
 
 # Default environment if not specified
 ENV ?= prod
@@ -6,6 +7,11 @@ ENV ?= prod
 # Directories
 ENV_DIR := environments/$(ENV)
 TOFU_DIR := tofu
+
+# Derived from the env's tfvars so this stays in sync with what tofu deploys.
+GCP_PROJECT_ID := $(shell awk -F'"' '/^[[:space:]]*gcp_project_id[[:space:]]*=/ {print $$2}' $(ENV_DIR)/$(ENV).tfvars)
+SERVICE_NAME := $(shell awk -F'"' '/^[[:space:]]*cloud_run_service_name[[:space:]]*=/ {print $$2}' $(ENV_DIR)/$(ENV).tfvars)
+GCP_REGION ?= australia-southeast1
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf " %-20s %s\n", $$1, $$2}'
@@ -55,3 +61,22 @@ clean: ## Clean up generated files
 	rm -f environments/*/*.tfplan
 	rm -f environments/*/*.tfstate
 	rm -f environments/*/*.tfstate.*
+
+scheduler-trigger-up: ## Manually trigger the warm-window scale-up Cloud Scheduler job
+	@set -a && . $(ENV_DIR)/.envrc && set +a && \
+	gcloud scheduler jobs run $(SERVICE_NAME)-scale-up \
+		--location=$(GCP_REGION) \
+		--project=$(GCP_PROJECT_ID)
+
+scheduler-trigger-down: ## Manually trigger the cold-window scale-down Cloud Scheduler job
+	@set -a && . $(ENV_DIR)/.envrc && set +a && \
+	gcloud scheduler jobs run $(SERVICE_NAME)-scale-down \
+		--location=$(GCP_REGION) \
+		--project=$(GCP_PROJECT_ID)
+
+cloud-run-min-instances: ## Show the live min_instance_count on the Cloud Run service
+	@set -a && . $(ENV_DIR)/.envrc && set +a && \
+	gcloud run services describe $(SERVICE_NAME) \
+		--region=$(GCP_REGION) \
+		--project=$(GCP_PROJECT_ID) \
+		--format='value(spec.template.metadata.annotations."autoscaling.knative.dev/minScale")'
