@@ -150,6 +150,30 @@ Configure these as repository variables:
 | `AWS_REGION` | Region (auto for R2) |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 
+## Couplings to other repos
+
+### Cloud Run sleep window ↔ frontend cold-start banner
+
+The `cloud-run-scheduler` module sets `min_instance_count` on the Cloud Run API
+service on a schedule. The cron times are configured via
+`cloud_run_scale_up_cron` / `cloud_run_scale_down_cron` in the env tfvars (see
+`environments/prod/prod.tfvars`).
+
+The cgrs-frontend's cold-start banner needs to know the same window so it can
+predict when the API will be cold and render a wake-up indicator. It reads the
+hours from `NEXT_PUBLIC_SLEEP_WINDOW_START_HOUR` and
+`NEXT_PUBLIC_SLEEP_WINDOW_END_HOUR` at build time.
+
+**To keep them in sync**: the root tofu stack exposes a `cloud_run_sleep_window`
+output (`scale_up_hour`, `scale_down_hour`, `time_zone`). A deploy pipeline
+should read those outputs and inject them as `NEXT_PUBLIC_*` vars when building
+the frontend. Changing one cron expression without the matching frontend
+rebuild causes the banner to mis-fire or under-fire.
+
+If you change the cron in tfvars, either:
+- Run the frontend deploy pipeline so it picks up the new outputs, or
+- Manually update `NEXT_PUBLIC_SLEEP_WINDOW_*_HOUR` in the Vercel project env.
+
 ## Extensibility
 
 The project structure supports adding:
