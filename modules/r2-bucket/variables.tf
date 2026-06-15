@@ -38,3 +38,14 @@ variable "cors_rules" {
   }))
   default = []
 }
+
+variable "lifecycle_rules" {
+  description = "Object-lifecycle rules. Empty list skips cloudflare_r2_bucket_lifecycle. Set abort_multipart_max_age_days to reclaim incomplete multipart uploads after N days."
+  type = list(object({
+    id                           = string
+    prefix                       = optional(string, "")
+    enabled                      = optional(bool, true)
+    abort_multipart_max_age_days = optional(number)
+  }))
+  default = []
+}

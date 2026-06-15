@@ -52,10 +52,11 @@ module "r2_buckets" {
 
   for_each = { for bucket in var.r2_buckets : bucket.name => bucket }
 
-  enabled     = true
-  bucket_name = each.value.name
-  account_id  = var.cloudflare_account_id
-  cors_rules  = try(each.value.cors_rules, [])
+  enabled         = true
+  bucket_name     = each.value.name
+  account_id      = var.cloudflare_account_id
+  cors_rules      = try(each.value.cors_rules, [])
+  lifecycle_rules = try(each.value.lifecycle_rules, [])
 }
 
 module "turnstile" {
@@ -104,16 +105,17 @@ module "cloud_run_api" {
 
   # Non-sensitive env vars
   env_vars = {
-    APP_NAME          = "CGRS API"
-    APP_VERSION       = "0.1.0"
-    DEBUG             = "false"
-    LOG_LEVEL         = "INFO"
-    DATABASE_ECHO     = "false"
-    TENANT_DEV_BYPASS = "false"
-    ALLOW_DEV_BYPASS  = "false"
-    R2_BUCKET_NAME    = "cgrs-images-prod"
-    CORS_ORIGINS      = var.cloud_run_cors_origins
-    UVICORN_WORKERS   = "2"
+    APP_NAME                 = "CGRS API"
+    APP_VERSION              = "0.1.0"
+    DEBUG                    = "false"
+    LOG_LEVEL                = "INFO"
+    DATABASE_ECHO            = "false"
+    TENANT_DEV_BYPASS        = "false"
+    ALLOW_DEV_BYPASS         = "false"
+    R2_BUCKET_NAME           = "cgrs-images-prod"
+    R2_DOCUMENTS_BUCKET_NAME = "cgrs-documents-prod"
+    CORS_ORIGINS             = var.cloud_run_cors_origins
+    UVICORN_WORKERS          = "2"
   }
 
   # Sensitive env vars — values come from .envrc via TF_VAR_*

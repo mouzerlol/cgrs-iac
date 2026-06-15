@@ -27,6 +27,37 @@ r2_buckets = [
         max_age_seconds = 3600
       }
     ]
+  },
+  {
+    name        = "cgrs-documents-prod"
+    description = "CGRS society governance documents — minutes, agendas, financial records (production)"
+    # Uploads are proxied server-side through the API (no browser PUT to R2), so CORS is GET/HEAD only.
+    # GET/HEAD covers presigned-GET downloads. Origins mirror cgrs-images-prod — keep this list in sync.
+    cors_rules = [
+      {
+        rule_id = "cgrs-web-app-origins"
+        allowed_origins = [
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+          "https://localhost:3000",
+          "https://cgrs.co.nz",
+          "https://www.cgrs.co.nz",
+        ]
+        allowed_methods = ["GET", "HEAD"]
+        allowed_headers = ["*"]
+        expose_headers  = ["ETag", "Content-Length"]
+        max_age_seconds = 3600
+      }
+    ]
+    # Reclaim multipart fragments orphaned by failed proxied uploads.
+    lifecycle_rules = [
+      {
+        id                           = "abort-incomplete-multipart-1d"
+        prefix                       = ""
+        enabled                      = true
+        abort_multipart_max_age_days = 1
+      }
+    ]
   }
 ]
 

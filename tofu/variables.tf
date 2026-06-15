@@ -53,6 +53,12 @@ variable "r2_buckets" {
       max_age_seconds = optional(number, 3600)
       rule_id         = optional(string)
     })), [])
+    lifecycle_rules = optional(list(object({
+      id                           = string
+      prefix                       = optional(string, "")
+      enabled                      = optional(bool, true)
+      abort_multipart_max_age_days = optional(number)
+    })), [])
   }))
   default = []
 }
