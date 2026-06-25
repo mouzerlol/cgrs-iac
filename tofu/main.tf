@@ -83,6 +83,27 @@ module "artifact_registry" {
   cleanup_max_versions = var.artifact_registry_max_versions
 }
 
+locals {
+  email_dispatch_on   = var.cloud_run_enabled && var.email_dispatch_enabled && var.email_dispatch_base_url != ""
+  email_send_url      = "${var.email_dispatch_base_url}/api/v1/internal/email/send"
+  email_reconcile_url = "${var.email_dispatch_base_url}/api/v1/internal/email/reconcile"
+  # Deterministic SA email (not the module output) so the API service env does not depend
+  # on the email_dispatch module — that module depends on the service (one-way), avoiding a cycle.
+  email_dispatch_sa_email = "${var.email_dispatch_sa_account_id}@${var.gcp_project_id}.iam.gserviceaccount.com"
+  email_dispatch_env = local.email_dispatch_on ? {
+    EMAIL_DISPATCH_VIA_CLOUD_TASKS = "true"
+    GCP_PROJECT_ID                 = var.gcp_project_id
+    CLOUD_TASKS_LOCATION           = var.gcp_region
+    CLOUD_TASKS_QUEUE              = var.email_dispatch_queue_id
+    EMAIL_SEND_ENDPOINT_URL        = local.email_send_url
+    EMAIL_RECONCILE_ENDPOINT_URL   = local.email_reconcile_url
+    EMAIL_DISPATCH_SA_EMAIL        = local.email_dispatch_sa_email
+    # Single shared OIDC audience for BOTH internal endpoints so token verification
+    # matches regardless of which endpoint (send vs reconcile) is called.
+    EMAIL_DISPATCH_OIDC_AUDIENCE = local.email_send_url
+  } : {}
+}
+
 module "cloud_run_api" {
   source = "../modules/cloud-run"
 
@@ -103,20 +124,21 @@ module "cloud_run_api" {
   # Public API
   allow_unauthenticated = true
 
-  # Non-sensitive env vars
-  env_vars = {
-    APP_NAME                 = "CGRS API"
-    APP_VERSION              = "0.1.0"
-    DEBUG                    = "false"
-    LOG_LEVEL                = "INFO"
-    DATABASE_ECHO            = "false"
-    TENANT_DEV_BYPASS        = "false"
-    ALLOW_DEV_BYPASS         = "false"
-    R2_BUCKET_NAME           = "cgrs-images-prod"
-    R2_DOCUMENTS_BUCKET_NAME = "cgrs-documents-prod"
-    CORS_ORIGINS             = var.cloud_run_cors_origins
-    UVICORN_WORKERS          = "2"
-  }
+  # Non-sensitive env vars (merged with Cloud Tasks dispatch vars when enabled)
+  env_vars = merge({
+    APP_NAME                      = "CGRS API"
+    APP_VERSION                   = "0.1.0"
+    DEBUG                         = "false"
+    LOG_LEVEL                     = "INFO"
+    DATABASE_ECHO                 = "false"
+    TENANT_DEV_BYPASS             = "false"
+    ALLOW_DEV_BYPASS              = "false"
+    R2_BUCKET_NAME                = "cgrs-images-prod"
+    R2_DOCUMENTS_BUCKET_NAME      = "cgrs-documents-prod"
+    R2_GROUND_REPORTS_BUCKET_NAME = "cgrs-ground-reports-prod"
+    CORS_ORIGINS                  = var.cloud_run_cors_origins
+    UVICORN_WORKERS               = "2"
+  }, local.email_dispatch_env)
 
   # Sensitive env vars — values come from .envrc via TF_VAR_*
   secret_env_vars = var.cloud_run_secret_env_vars
@@ -135,6 +157,30 @@ module "cloud_run_scheduler" {
   scale_up_cron      = var.cloud_run_scale_up_cron
   scale_down_cron    = var.cloud_run_scale_down_cron
   time_zone          = var.cloud_run_schedule_timezone
+
+  labels = var.tags
+
+  depends_on = [module.cloud_run_api]
+}
+
+module "email_dispatch" {
+  source = "../modules/email-dispatch"
+
+  count = local.email_dispatch_on ? 1 : 0
+
+  project_id   = var.gcp_project_id
+  location     = var.gcp_region
+  service_name = var.cloud_run_service_name
+
+  queue_id                    = var.email_dispatch_queue_id
+  dispatch_service_account_id = var.email_dispatch_sa_account_id
+  send_endpoint_url           = local.email_send_url
+  reconcile_endpoint_url      = local.email_reconcile_url
+  # Shared audience (= send URL) so the reconcile scheduler's OIDC token verifies the
+  # same way the send tasks do. Keep in sync with EMAIL_DISPATCH_OIDC_AUDIENCE above.
+  oidc_audience  = local.email_send_url
+  reconcile_cron = var.email_reconcile_cron
+  time_zone      = var.cloud_run_schedule_timezone
 
   labels = var.tags
 

@@ -58,6 +58,31 @@ r2_buckets = [
         abort_multipart_max_age_days = 1
       }
     ]
+  },
+  {
+    name        = "cgrs-ground-reports-prod"
+    description = "CGRS ground-report images — location-tagged photo reports of the development (production)"
+    # Uploads are proxied server-side through the API (no browser PUT to R2); the member
+    # reel loads images via presigned GET, so CORS is GET/HEAD only. Origins mirror the
+    # other buckets — keep this list in sync.
+    cors_rules = [
+      {
+        rule_id = "cgrs-web-app-origins"
+        allowed_origins = [
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+          "https://localhost:3000",
+          "https://cgrs.co.nz",
+          "https://www.cgrs.co.nz",
+        ]
+        allowed_methods = ["GET", "HEAD"]
+        allowed_headers = ["*"]
+        expose_headers  = ["ETag", "Content-Length"]
+        max_age_seconds = 3600
+      }
+    ]
+    # NOTE: 180-day object-expiration lifecycle is intentionally out of scope for now
+    # (add-ground-report §4.3). The API's member query still excludes >180-day reports.
   }
 ]
 
@@ -83,6 +108,17 @@ cloud_run_warm_min_instances = 1
 cloud_run_scale_up_cron      = "0 6 * * *"
 cloud_run_scale_down_cron    = "0 23 * * *"
 cloud_run_schedule_timezone  = "Pacific/Auckland"
+
+# Outbound email dispatch via Cloud Tasks (ADR 022). base_url is the API's stable Cloud
+# Run v2 service URL (same value the frontend uses as NEXT_PUBLIC_API_URL). Provisions the
+# queue + reconcile scheduler and turns on EMAIL_DISPATCH_VIA_CLOUD_TASKS in the API.
+email_dispatch_enabled  = true
+email_dispatch_base_url = "https://cgrs-api-154910431334.australia-southeast1.run.app"
+# Reconcile only during the Cloud Run warm window (06:00–23:00 NZ). Neon Free fixes
+# autosuspend at 5 min (no override), so an overnight sweep would cold-start Cloud Run
+# AND bill a 5-min Neon wake every hour for nothing. Warm-window-only adds zero extra
+# wakes; orphaned mail just waits until the next morning.
+email_reconcile_cron = "0 6-23 * * *"
 
 # Common tags/labels
 tags = {

@@ -59,8 +59,13 @@ Buckets are declared in `prod.tfvars` under `r2_buckets` and provisioned by `mod
 
 - **`cgrs-images-prod`** — website images. CORS allows browser presigned `PUT` (direct upload).
 - **`cgrs-documents-prod`** — society governance documents (minutes, agendas, financial records). Uploads are proxied server-side through the API, so CORS is **GET/HEAD only** (no browser PUT). A lifecycle rule aborts incomplete multipart uploads after 1 day.
+- **`cgrs-ground-reports-prod`** — ground-report images (location-tagged photos of the development). Uploads are proxied server-side; the member reel loads images via presigned GET, so CORS is **GET/HEAD only**. Unlike the documents bucket, it reuses the **shared account** R2 token (no dedicated token) — see below. (A 180-day object-expiration lifecycle is intentionally out of scope for now; the API's member query already excludes >180-day reports.)
 
-**Keep CORS origins in sync:** both buckets use the same web-app origin list. If the deployed origins change, update both `cors_rules` blocks together — drift silently breaks presigned-GET downloads.
+**Keep CORS origins in sync:** all three buckets use the same web-app origin list. If the deployed origins change, update every `cors_rules` block together — drift silently breaks presigned-GET downloads.
+
+### Ground-reports bucket credentials
+
+The ground-reports bucket reuses the **shared account** R2 token (`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`) — no dedicated token. This requires that token to be **account-scoped** (able to write any bucket). If it is instead locked to specific buckets, either add `cgrs-ground-reports-prod` to its allow-list or set dedicated `R2_GROUND_REPORTS_ACCESS_KEY_ID` / `R2_GROUND_REPORTS_SECRET_ACCESS_KEY` secrets (the API prefers these when present, else falls back to the shared token). `R2_GROUND_REPORTS_BUCKET_NAME` is non-secret and set in `tofu/main.tf` `env_vars`.
 
 ### Documents bucket credentials (out-of-band, not Terraform-managed)
 

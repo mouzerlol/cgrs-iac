@@ -191,6 +191,38 @@ variable "cloud_run_schedule_timezone" {
   default     = "Pacific/Auckland"
 }
 
+# --- Outbound Email Dispatch (Cloud Tasks — ADR 022) ---
+
+variable "email_dispatch_enabled" {
+  description = "Provision Cloud Tasks queue + reconcile scheduler and enable Cloud Tasks dispatch in the API."
+  type        = bool
+  default     = false
+}
+
+variable "email_dispatch_base_url" {
+  description = "Stable public base URL of the API (e.g. the run.app service URL or api.cgrs.co.nz). The internal /send and /reconcile endpoint URLs are derived from it. Required when email_dispatch_enabled."
+  type        = string
+  default     = ""
+}
+
+variable "email_dispatch_queue_id" {
+  description = "Cloud Tasks queue id for outbound email."
+  type        = string
+  default     = "email-outbound"
+}
+
+variable "email_dispatch_sa_account_id" {
+  description = "Account id (before @<project>.iam) of the email dispatch service account."
+  type        = string
+  default     = "email-dispatch"
+}
+
+variable "email_reconcile_cron" {
+  description = "Cron schedule for the reconcile sweep, in cloud_run_schedule_timezone. Default runs hourly only during the warm window — Neon Free's fixed 5-min autosuspend makes overnight wakes wasteful."
+  type        = string
+  default     = "0 6-23 * * *"
+}
+
 # --- Turnstile ---
 
 variable "turnstile_enabled" {
