@@ -50,9 +50,17 @@ resource "google_cloud_scheduler_job" "keep_warm" {
     http_method = "GET"
     uri         = "${var.service_url}${var.health_path}"
 
+    # Do NOT set User-Agent here. Cloud Scheduler overrides it with "Google-Cloud-Scheduler"
+    # and the API does not echo the configured value back, so OpenTofu sees a permanent diff
+    # and every plan would show this job as needing an update, forever.
+    #
+    # X-CGRS-Keepalive IS delivered to the app, but Cloud Run request logs carry only a fixed
+    # set of httpRequest fields, so it is not queryable there — only the app could log it.
+    # To identify pings in Cloud Run request logs, filter on:
+    #   httpRequest.userAgent="Google-Cloud-Scheduler" AND httpRequest.requestUrl:"/health"
+    # (userAgent alone also matches the email-reconcile job, hence the path.)
     headers = {
       "X-CGRS-Keepalive" = "1"
-      "User-Agent"       = "cgrs-keep-warm/1.0"
     }
   }
 
