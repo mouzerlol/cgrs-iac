@@ -91,6 +91,11 @@ resource "google_cloud_tasks_queue" "email_outbound" {
     max_concurrent_dispatches = 10
   }
 
+  # Per-task dispatch logging to Cloud Logging — effectively free at this volume.
+  stackdriver_logging_config {
+    sampling_ratio = var.log_sampling_ratio
+  }
+
   depends_on = [google_project_service.cloud_tasks]
 }
 

@@ -114,11 +114,12 @@ cloud_run_schedule_timezone  = "Pacific/Auckland"
 # queue + reconcile scheduler and turns on EMAIL_DISPATCH_VIA_CLOUD_TASKS in the API.
 email_dispatch_enabled  = true
 email_dispatch_base_url = "https://cgrs-api-154910431334.australia-southeast1.run.app"
-# Reconcile only during the Cloud Run warm window (06:00–23:00 NZ). Neon Free fixes
-# autosuspend at 5 min (no override), so an overnight sweep would cold-start Cloud Run
-# AND bill a 5-min Neon wake every hour for nothing. Warm-window-only adds zero extra
-# wakes; orphaned mail just waits until the next morning.
-email_reconcile_cron = "0 6-23 * * *"
+# Reconcile twice daily inside the Cloud Run warm window (07:00 + 19:00 NZ). Each sweep
+# forces a >=5-min Neon compute wake (Free tier autosuspend is fixed at 5 min, no override),
+# so hourly sweeps burned ~10 standalone compute-hrs/mo for a low-volume queue. Twice-daily
+# keeps orphan-recovery latency <=12h — well under the 24h fail_after horizon — for near-zero
+# Neon cost. Both fires land in the warm window so they add no Cloud Run cold start.
+email_reconcile_cron = "0 7,19 * * *"
 
 # Common tags/labels
 tags = {

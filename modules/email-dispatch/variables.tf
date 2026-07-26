@@ -83,6 +83,12 @@ variable "max_doublings" {
   default     = 4
 }
 
+variable "log_sampling_ratio" {
+  description = "Fraction of task dispatch operations logged to Cloud Logging (0.0–1.0). 1.0 = full visibility; free at low volume."
+  type        = number
+  default     = 1.0
+}
+
 variable "labels" {
   description = "Resource labels."
   type        = map(string)
