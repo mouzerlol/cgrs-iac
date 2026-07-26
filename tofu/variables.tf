@@ -123,9 +123,14 @@ variable "cloud_run_image" {
 }
 
 variable "cloud_run_min_instances" {
-  description = "Minimum instances (0 = scale to zero for free tier)"
+  description = "Minimum instances. MUST stay 0: min-instance idle time is billed and blew the free tier by 10.6x. Warmth comes from the keep-warm ping job instead (see modules/cloud-run-keep-warm)."
   type        = number
   default     = 0
+
+  validation {
+    condition     = var.cloud_run_min_instances == 0
+    error_message = "cloud_run_min_instances must be 0. A non-zero value bills idle instance time and leaves the Cloud Run free tier; use the keep-warm ping job instead. To override deliberately during an incident, use `gcloud run services update --min-instances=N` and revert."
+  }
 }
 
 variable "cloud_run_max_instances" {
@@ -168,31 +173,31 @@ variable "cloud_run_secret_env_vars" {
 # --- Cloud Run Scheduled Scaling ---
 
 variable "cloud_run_scheduler_enabled" {
-  description = "Enable scheduled min_instance_count adjustments via Cloud Scheduler"
+  description = "Enable the keep-warm ping job (Cloud Scheduler GET /health during the warm window)"
   type        = bool
   default     = true
 }
 
-variable "cloud_run_warm_min_instances" {
-  description = "Min instance count to maintain during the warm window (NZ business hours)"
+variable "cloud_run_ping_cron" {
+  description = "Cron for the keep-warm ping, in cloud_run_schedule_timezone. Every 5 min inside the warm window; a 3x margin against Cloud Run's documented ~15 min idle-instance retention."
+  type        = string
+  default     = "*/5 6-22 * * *"
+}
+
+variable "cloud_run_warm_window_start_hour" {
+  description = "Hour the warm window opens. Surfaced to the frontend cold-start banner via cloud_run_sleep_window; keep consistent with cloud_run_ping_cron."
   type        = number
-  default     = 1
+  default     = 6
 }
 
-variable "cloud_run_scale_up_cron" {
-  description = "Cron expression for the warm-window start, in cloud_run_schedule_timezone"
-  type        = string
-  default     = "0 6 * * *"
-}
-
-variable "cloud_run_scale_down_cron" {
-  description = "Cron expression for the warm-window end, in cloud_run_schedule_timezone"
-  type        = string
-  default     = "0 23 * * *"
+variable "cloud_run_warm_window_end_hour" {
+  description = "Hour the warm window closes. Surfaced to the frontend cold-start banner via cloud_run_sleep_window; keep consistent with cloud_run_ping_cron."
+  type        = number
+  default     = 23
 }
 
 variable "cloud_run_schedule_timezone" {
-  description = "IANA time zone for scheduled scaling jobs. Pacific/Auckland is DST-aware."
+  description = "IANA time zone for the keep-warm cron. Pacific/Auckland is DST-aware."
   type        = string
   default     = "Pacific/Auckland"
 }

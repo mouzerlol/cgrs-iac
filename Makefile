@@ -1,5 +1,5 @@
 .PHONY: help init plan apply apply-saved destroy validate fmt check clean clean-plan \
-        scheduler-trigger-up scheduler-trigger-down cloud-run-min-instances
+        scheduler-trigger-ping cloud-run-min-instances cloud-run-force-warm cloud-run-unpin
 
 # Default environment if not specified
 ENV ?= prod
@@ -62,21 +62,28 @@ clean: ## Clean up generated files
 	rm -f environments/*/*.tfstate
 	rm -f environments/*/*.tfstate.*
 
-scheduler-trigger-up: ## Manually trigger the warm-window scale-up Cloud Scheduler job
+scheduler-trigger-ping: ## Manually fire the keep-warm ping job (expect HTTP 200)
 	@set -a && . $(ENV_DIR)/.envrc && set +a && \
-	gcloud scheduler jobs run $(SERVICE_NAME)-scale-up \
+	gcloud scheduler jobs run $(SERVICE_NAME)-keep-warm \
 		--location=$(GCP_REGION) \
 		--project=$(GCP_PROJECT_ID)
 
-scheduler-trigger-down: ## Manually trigger the cold-window scale-down Cloud Scheduler job
-	@set -a && . $(ENV_DIR)/.envrc && set +a && \
-	gcloud scheduler jobs run $(SERVICE_NAME)-scale-down \
-		--location=$(GCP_REGION) \
-		--project=$(GCP_PROJECT_ID)
-
-cloud-run-min-instances: ## Show the live min_instance_count on the Cloud Run service
+cloud-run-min-instances: ## Show the live min_instance_count — should ALWAYS be 0 (see modules/cloud-run-keep-warm)
 	@set -a && . $(ENV_DIR)/.envrc && set +a && \
 	gcloud run services describe $(SERVICE_NAME) \
 		--region=$(GCP_REGION) \
 		--project=$(GCP_PROJECT_ID) \
 		--format='value(spec.template.metadata.annotations."autoscaling.knative.dev/minScale")'
+
+# Force warmth immediately, bypassing IaC. Use during an incident when a cold start is
+# unacceptable; this is also the ping-to-warm rollback. Costs ~$10/mo gross while set, so revert.
+cloud-run-force-warm: ## EMERGENCY: pin min_instances=1 (billed! revert with cloud-run-unpin)
+	@set -a && . $(ENV_DIR)/.envrc && set +a && \
+	gcloud run services update $(SERVICE_NAME) \
+		--region=$(GCP_REGION) --project=$(GCP_PROJECT_ID) --min-instances=1
+	@echo "\nWARNING: min_instances=1 is billed idle time and leaves the free tier. Revert with: make cloud-run-unpin ENV=$(ENV)"
+
+cloud-run-unpin: ## Revert cloud-run-force-warm (min_instances back to 0)
+	@set -a && . $(ENV_DIR)/.envrc && set +a && \
+	gcloud run services update $(SERVICE_NAME) \
+		--region=$(GCP_REGION) --project=$(GCP_PROJECT_ID) --min-instances=0

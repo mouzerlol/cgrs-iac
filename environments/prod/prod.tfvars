@@ -101,13 +101,18 @@ cloud_run_memory        = "512Mi"
 # Browser Origins for credentialed CORS (must match the page URL exactly, not the API host). Include 127.0.0.1 for local UI against prod API.
 cloud_run_cors_origins = "https://www.cgrs.co.nz,https://cgrs.co.nz,http://localhost:3000,http://127.0.0.1:3000"
 
-# Scheduled scaling — keep one warm instance during NZ waking hours, scale to zero overnight.
-# Set cloud_run_scheduler_enabled = false to disable during incidents (operator owns min_instances thereafter).
-cloud_run_scheduler_enabled  = true
-cloud_run_warm_min_instances = 1
-cloud_run_scale_up_cron      = "0 6 * * *"
-cloud_run_scale_down_cron    = "0 23 * * *"
-cloud_run_schedule_timezone  = "Pacific/Auckland"
+# Keep-warm — a Cloud Scheduler GET /health every 5 min during NZ waking hours keeps one
+# instance resident. min_instances stays 0: under request-based billing a resident-but-idle
+# instance is NOT billed, whereas min_instances=1 billed ~1.9M instance-seconds/month (10.6x
+# the free-tier CPU allowance) for something measured 97% idle. Best-effort by design — Cloud
+# Run's ~15 min idle retention is documented but not guaranteed; 5 min gives a 3x margin.
+# Set cloud_run_scheduler_enabled = false to disable during an incident; to force warmth
+# immediately use `gcloud run services update cgrs-api --min-instances=1` and revert after.
+cloud_run_scheduler_enabled      = true
+cloud_run_ping_cron              = "*/5 6-22 * * *"
+cloud_run_warm_window_start_hour = 6
+cloud_run_warm_window_end_hour   = 23
+cloud_run_schedule_timezone      = "Pacific/Auckland"
 
 # Outbound email dispatch via Cloud Tasks (ADR 022). base_url is the API's stable Cloud
 # Run v2 service URL (same value the frontend uses as NEXT_PUBLIC_API_URL). Provisions the

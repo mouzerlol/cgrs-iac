@@ -152,8 +152,12 @@ module "cloud_run_api" {
   secret_env_vars = var.cloud_run_secret_env_vars
 }
 
+# NOTE: the module BLOCK name stays `cloud_run_scheduler` even though the module is now
+# `cloud-run-keep-warm`. Renaming the block would re-address every resource inside it in state.
+# Module `source` paths are not recorded in state, so renaming the directory is free; renaming
+# the block is not. Cosmetic mismatch is cheaper than the state churn.
 module "cloud_run_scheduler" {
-  source = "../modules/cloud-run-scheduler"
+  source = "../modules/cloud-run-keep-warm"
 
   count = var.cloud_run_enabled && var.cloud_run_scheduler_enabled ? 1 : 0
 
@@ -161,10 +165,14 @@ module "cloud_run_scheduler" {
   location     = var.gcp_region
   service_name = var.cloud_run_service_name
 
-  warm_min_instances = var.cloud_run_warm_min_instances
-  scale_up_cron      = var.cloud_run_scale_up_cron
-  scale_down_cron    = var.cloud_run_scale_down_cron
-  time_zone          = var.cloud_run_schedule_timezone
+  # Ping the service's own URL. Taken from the module output so it cannot drift from the
+  # actual service, and so a service replacement re-points the job automatically.
+  service_url = one(module.cloud_run_api[*].service_url)
+
+  ping_cron              = var.cloud_run_ping_cron
+  warm_window_start_hour = var.cloud_run_warm_window_start_hour
+  warm_window_end_hour   = var.cloud_run_warm_window_end_hour
+  time_zone              = var.cloud_run_schedule_timezone
 
   labels = var.tags
 

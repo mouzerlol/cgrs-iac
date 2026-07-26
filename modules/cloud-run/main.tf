@@ -99,9 +99,9 @@ resource "google_cloud_run_v2_service" "this" {
     ignore_changes = [
       # Allow image updates via `gcloud run deploy` or Makefile without IaC drift
       template[0].containers[0].image,
-      # Owned at runtime by the cloud-run-scheduler module (Cloud Scheduler PATCHes this twice daily).
-      # var.min_instances seeds the initial value on first apply only.
-      template[0].scaling[0].min_instance_count,
+      # min_instance_count is deliberately NOT ignored. Nothing mutates it at runtime any more
+      # (the keep-warm module pings /health instead of PATCHing scaling), so OpenTofu owns it
+      # and any accidental re-introduction of a non-zero value shows up as drift in `make plan`.
     ]
   }
 }

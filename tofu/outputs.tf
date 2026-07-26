@@ -42,9 +42,15 @@ output "cloud_run_revision" {
 # Surfaced for the frontend build pipeline. The cold-start banner reads these
 # (via NEXT_PUBLIC_SLEEP_WINDOW_*_HOUR) to know when to render. Keeping the
 # IaC values as the source of truth prevents the frontend banner from drifting
-# out of sync with the actual scheduler.
+# out of sync with the actual keep-warm window.
+#
+# The key names are intentionally unchanged from the min-instance era so no frontend change is
+# needed; they now come from the explicit warm-window hour variables rather than being parsed
+# out of the retired scale-up/scale-down crons. Semantics are slightly weaker than before:
+# inside the window the service is USUALLY warm (best-effort ping) rather than GUARANTEED warm
+# (paid min-instance). The banner does not claim either, so its copy stays accurate.
 output "cloud_run_sleep_window" {
-  description = "Sleep-window hours derived from the scheduler crons (consumed by the frontend cold-start banner)"
+  description = "Warm-window hours (consumed by the frontend cold-start banner as NEXT_PUBLIC_SLEEP_WINDOW_*_HOUR)"
   value = var.cloud_run_enabled && var.cloud_run_scheduler_enabled ? {
     scale_up_hour   = one(module.cloud_run_scheduler[*].scale_up_hour)
     scale_down_hour = one(module.cloud_run_scheduler[*].scale_down_hour)
