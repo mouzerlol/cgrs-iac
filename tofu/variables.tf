@@ -146,6 +146,12 @@ variable "cloud_run_memory" {
   default     = "512Mi"
 }
 
+variable "cloud_run_startup_cpu_boost" {
+  description = "Allocate extra CPU during container startup only. Cuts cold start for the import-heavy FastAPI app; steady-state cost unchanged."
+  type        = bool
+  default     = true
+}
+
 variable "cloud_run_cors_origins" {
   description = "Comma-separated CORS origins for the API"
   type        = string

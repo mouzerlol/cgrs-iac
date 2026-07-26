@@ -62,6 +62,12 @@ variable "memory" {
   default     = "512Mi"
 }
 
+variable "startup_cpu_boost" {
+  description = "Allocate extra CPU during container startup only. Shortens cold start for import-heavy Python apps; does not affect steady-state cost."
+  type        = bool
+  default     = true
+}
+
 variable "timeout" {
   description = "Request timeout in seconds"
   type        = number

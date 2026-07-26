@@ -121,6 +121,10 @@ module "cloud_run_api" {
   cpu           = var.cloud_run_cpu
   memory        = var.cloud_run_memory
 
+  # Cold start is dominated by CPU-bound Python imports on a single vCPU; boost applies
+  # to the startup window only, so steady-state cost is unaffected.
+  startup_cpu_boost = var.cloud_run_startup_cpu_boost
+
   # Public API
   allow_unauthenticated = true
 
@@ -137,7 +141,11 @@ module "cloud_run_api" {
     R2_DOCUMENTS_BUCKET_NAME      = "cgrs-documents-prod"
     R2_GROUND_REPORTS_BUCKET_NAME = "cgrs-ground-reports-prod"
     CORS_ORIGINS                  = var.cloud_run_cors_origins
-    UVICORN_WORKERS               = "2"
+    # 1, not 2: the service has 1 vCPU, so a second uvicorn worker cannot run in parallel —
+    # it only duplicates the app import and contends for the same core. Measured locally at
+    # 1 vCPU: 2 workers = 8.52s cold start, 1 worker = 4.89s. FastAPI is async, so one worker
+    # covers this service's concurrency. Raise only alongside cloud_run_cpu.
+    UVICORN_WORKERS = "1"
   }, local.email_dispatch_env)
 
   # Sensitive env vars — values come from .envrc via TF_VAR_*

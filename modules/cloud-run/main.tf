@@ -34,6 +34,12 @@ resource "google_cloud_run_v2_service" "this" {
           memory = var.memory
         }
         cpu_idle = true # CPU throttled when not processing requests (cost saving)
+
+        # Extra CPU during container startup only. Measured cold start was ~20-27s
+        # (startup_latencies mean ~22.8s), dominated by CPU-bound Python imports of the
+        # FastAPI route tree on a single vCPU. Boost applies to the startup window only,
+        # so steady-state cost is unchanged; it shortens the window that IS billed.
+        startup_cpu_boost = var.startup_cpu_boost
       }
 
       # Non-sensitive environment variables
