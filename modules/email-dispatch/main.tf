@@ -24,7 +24,7 @@ resource "google_project_service" "cloud_tasks" {
   disable_on_destroy = false
 }
 
-# Cloud Scheduler API is also enabled by the cloud-run-scheduler module; enabling here
+# Cloud Scheduler API is also enabled by the cloud-run-keep-warm module; enabling here
 # keeps this module self-contained (enable is idempotent; disable_on_destroy=false).
 resource "google_project_service" "cloud_scheduler" {
   project            = var.project_id
