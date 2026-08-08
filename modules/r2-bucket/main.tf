@@ -25,6 +25,34 @@ resource "cloudflare_r2_bucket_cors" "this" {
   depends_on = [cloudflare_r2_bucket.this]
 }
 
+# Cloudflare's managed r2.dev hostname. Guarded off by default: a bucket with neither this
+# nor a custom domain is private, which is what every bucket in this estate but the blog one is.
+resource "cloudflare_r2_managed_domain" "this" {
+  count = var.public_access_enabled ? 1 : 0
+
+  account_id  = var.account_id
+  bucket_name = var.bucket_name
+  enabled     = true
+
+  depends_on = [cloudflare_r2_bucket.this]
+}
+
+# Binding a hostname is what makes a bucket world-readable and puts it behind Cloudflare's
+# cache. Cloudflare creates the CNAME as part of the binding, so there is no separate DNS
+# resource here to drift out of step with it.
+resource "cloudflare_r2_custom_domain" "this" {
+  count = var.custom_domain != null ? 1 : 0
+
+  account_id  = var.account_id
+  bucket_name = var.bucket_name
+  domain      = var.custom_domain.name
+  zone_id     = var.custom_domain.zone_id
+  enabled     = true
+  min_tls     = var.custom_domain.min_tls
+
+  depends_on = [cloudflare_r2_bucket.this]
+}
+
 resource "cloudflare_r2_bucket_lifecycle" "this" {
   count = length(var.lifecycle_rules) > 0 ? 1 : 0
 

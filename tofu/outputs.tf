@@ -8,8 +8,10 @@ output "r2_buckets" {
   value = {
     for name, bucket in module.r2_buckets :
     name => {
-      id              = bucket.id
-      cors_configured = bucket.cors_configured
+      id                    = bucket.id
+      cors_configured       = bucket.cors_configured
+      public_access_enabled = bucket.public_access_enabled
+      public_hostname       = bucket.public_hostname
     }
   }
 }

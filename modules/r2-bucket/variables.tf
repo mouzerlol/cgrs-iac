@@ -39,6 +39,22 @@ variable "cors_rules" {
   default = []
 }
 
+variable "public_access_enabled" {
+  description = "Expose the bucket on Cloudflare's managed r2.dev hostname. Off by default. Published content is served over a custom domain instead, so this exists for completeness and is not expected to be used."
+  type        = bool
+  default     = false
+}
+
+variable "custom_domain" {
+  description = "Hostname to bind to the bucket. Binding is what makes objects publicly readable and edge-cached; null leaves the bucket private and skips cloudflare_r2_custom_domain. zone_id is the Cloudflare zone the hostname belongs to."
+  type = object({
+    name    = string
+    zone_id = string
+    min_tls = optional(string, "1.2")
+  })
+  default = null
+}
+
 variable "lifecycle_rules" {
   description = "Object-lifecycle rules. Empty list skips cloudflare_r2_bucket_lifecycle. Set abort_multipart_max_age_days to reclaim incomplete multipart uploads after N days."
   type = list(object({

@@ -39,14 +39,30 @@ variable "cloudflare_api_token" {
   sensitive   = true
 }
 
+variable "web_app_origins" {
+  description = "Browser origins the web application is served from. Every bucket whose CORS rule omits allowed_origins inherits this list, so an origin change is one edit rather than one per bucket. Must match the page URL exactly (scheme, host, port)."
+  type        = list(string)
+  default     = []
+}
+
 variable "r2_buckets" {
-  description = "List of R2 bucket configurations"
+  description = "List of R2 bucket configurations. Adding a community means adding entries here — the module handles every property that differs between them."
   type = list(object({
     name            = string
     description     = optional(string, "")
     website_enabled = optional(bool, false)
+    # Publicly readable, on a hostname the society owns. Omit both and the bucket is private.
+    public_access_enabled = optional(bool, false)
+    custom_domain = optional(object({
+      name = string
+      # Zone the hostname belongs to, by name. The id is looked up at plan time so no
+      # opaque identifier lives in configuration and the zone stays Cloudflare-owned.
+      zone    = string
+      min_tls = optional(string, "1.2")
+    }))
     cors_rules = optional(list(object({
-      allowed_origins = list(string)
+      # Omitted means "the web application origins" — see var.web_app_origins.
+      allowed_origins = optional(list(string))
       allowed_methods = list(string)
       allowed_headers = optional(list(string), ["Content-Type"])
       expose_headers  = optional(list(string), ["ETag", "Content-Length"])
@@ -232,6 +248,20 @@ variable "email_reconcile_cron" {
   description = "Cron schedule for the reconcile sweep, in cloud_run_schedule_timezone. Default runs hourly only during the warm window — Neon Free's fixed 5-min autosuspend makes overnight wakes wasteful."
   type        = string
   default     = "0 6-23 * * *"
+}
+
+# --- Billing Export (BigQuery) ---
+
+variable "billing_export_enabled" {
+  description = "Create the BigQuery dataset that receives the Cloud Billing Standard usage cost export. Creates the destination only — linking the billing account to it is a Console-only manual step, so enabling this alone leaves the export inert."
+  type        = bool
+  default     = false
+}
+
+variable "billing_export_dataset_id" {
+  description = "BigQuery dataset ID for the billing export. Must match the dataset selected in the Console billing-export step; renaming it here creates a new empty dataset and orphans the exported history."
+  type        = string
+  default     = "billing_export"
 }
 
 # --- Turnstile ---

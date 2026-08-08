@@ -1,3 +1,18 @@
+> **SUPERSEDED — archived 2026-08-05. Replaced by `ping-to-warm-cloud-run`** (root openspec
+> instance: `openspec/changes/ping-to-warm-cloud-run`).
+>
+> The scheduled `min_instance_count = 1` window described below shipped 2026-05-07 and was
+> retired at cutover on 2026-07-26. It cost 61,300 billable instance-seconds/day (10.6× the
+> Cloud Run free CPU allowance) and 97% of that billed time was idle. It has been replaced by a
+> single Cloud Scheduler job issuing `GET /health` every 5 minutes over 06:00–23:00
+> `Pacific/Auckland`, with `min_instance_count` pinned to `0` permanently — 297 billable
+> instance-seconds/day, 6.8% of the free allowance. The `cgrs-api-scale-up` /
+> `cgrs-api-scale-down` jobs, the `cloud-run-scheduler` service account and its IAM bindings,
+> and the `ignore_changes` on `min_instance_count` no longer exist. Nothing here is current.
+>
+> The 5 unchecked tasks below were deliberately left unchecked: they are work this change no
+> longer needs done.
+
 ## Why
 
 The `cgrs-api` Cloud Run service currently runs with `min_instances = 0`, which means every request after a period of inactivity pays a cold-start penalty. End users in NZ hit this whenever the service has been idle (most often the first request of the morning, or after a quiet stretch).

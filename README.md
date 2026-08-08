@@ -154,10 +154,21 @@ Configure these as repository variables:
 
 ### Cloud Run sleep window ↔ frontend cold-start banner
 
-The `cloud-run-scheduler` module sets `min_instance_count` on the Cloud Run API
-service on a schedule. The cron times are configured via
-`cloud_run_scale_up_cron` / `cloud_run_scale_down_cron` in the env tfvars (see
-`environments/prod/prod.tfvars`).
+The `cloud-run-keep-warm` module **no longer sets `min_instance_count`**. It runs
+a single Cloud Scheduler job that issues `GET /health` against the Cloud Run API
+service every 5 minutes during the warm window, keeping an instance resident
+without paying for idle time. `min_instance_count` is pinned to `0` permanently
+and is owned by Tofu. The window is configured via `cloud_run_ping_cron`,
+`cloud_run_warm_window_start_hour` and `cloud_run_warm_window_end_hour` in the
+env tfvars (see `environments/prod/prod.tfvars` and
+`environments/prod/README.md` for the full mechanism and cost basis).
+
+Note the directory is `modules/cloud-run-keep-warm` (renamed from
+`cloud-run-scheduler`), but the Tofu module **block** in `tofu/main.tf` is still
+called `cloud_run_scheduler` on purpose. Module `source` paths are not recorded
+in state, so renaming the directory is free; renaming the block would re-address
+every resource inside it and force a destroy/create of the service account,
+whose ID GCP then tombstones for 30 days.
 
 The cgrs-frontend's cold-start banner needs to know the same window so it can
 predict when the API will be cold and render a wake-up indicator. It reads the
@@ -165,12 +176,14 @@ hours from `NEXT_PUBLIC_SLEEP_WINDOW_START_HOUR` and
 `NEXT_PUBLIC_SLEEP_WINDOW_END_HOUR` at build time.
 
 **To keep them in sync**: the root tofu stack exposes a `cloud_run_sleep_window`
-output (`scale_up_hour`, `scale_down_hour`, `time_zone`). A deploy pipeline
-should read those outputs and inject them as `NEXT_PUBLIC_*` vars when building
-the frontend. Changing one cron expression without the matching frontend
-rebuild causes the banner to mis-fire or under-fire.
+output (`scale_up_hour`, `scale_down_hour`, `time_zone`) — names kept verbatim
+as the frontend contract, now sourced from the warm-window hour variables rather
+than parsed out of the retired scaling crons. A deploy pipeline should read those
+outputs and inject them as `NEXT_PUBLIC_*` vars when building the frontend.
+Changing the window without the matching frontend rebuild causes the banner to
+mis-fire or under-fire.
 
-If you change the cron in tfvars, either:
+If you change the window hours in tfvars, either:
 - Run the frontend deploy pipeline so it picks up the new outputs, or
 - Manually update `NEXT_PUBLIC_SLEEP_WINDOW_*_HOUR` in the Vercel project env.
 

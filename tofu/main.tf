@@ -47,16 +47,47 @@ provider "google" {
   region  = var.gcp_region
 }
 
+# Zones a bucket binds a hostname to. Read, never managed: the zone holds records this
+# estate does not own (Vercel, Clerk, email), so declaring it as a resource would put the
+# whole domain inside `tofu destroy`'s blast radius for the sake of one identifier.
+# Requires the Cloudflare token to carry Zone:Read on each zone named here.
+data "cloudflare_zone" "custom_domain" {
+  for_each = toset([
+    for bucket in var.r2_buckets : bucket.custom_domain.zone
+    if bucket.custom_domain != null
+  ])
+
+  filter = {
+    name    = each.value
+    account = { id = var.cloudflare_account_id }
+  }
+}
+
 module "r2_buckets" {
   source = "../modules/r2-bucket"
 
   for_each = { for bucket in var.r2_buckets : bucket.name => bucket }
 
-  enabled         = true
-  bucket_name     = each.value.name
-  account_id      = var.cloudflare_account_id
-  cors_rules      = try(each.value.cors_rules, [])
-  lifecycle_rules = try(each.value.lifecycle_rules, [])
+  enabled     = true
+  bucket_name = each.value.name
+  account_id  = var.cloudflare_account_id
+
+  # A rule that names no origins takes the shared web application list, so the origins are
+  # declared once for the whole estate rather than repeated in every bucket declaration.
+  cors_rules = [
+    for r in each.value.cors_rules : merge(r, {
+      allowed_origins = coalesce(r.allowed_origins, var.web_app_origins)
+    })
+  ]
+
+  lifecycle_rules       = each.value.lifecycle_rules
+  public_access_enabled = each.value.public_access_enabled
+
+  custom_domain = each.value.custom_domain == null ? null : {
+    name    = each.value.custom_domain.name
+    zone_id = data.cloudflare_zone.custom_domain[each.value.custom_domain.zone].id
+    min_tls = each.value.custom_domain.min_tls
+  }
 }
 
 module "turnstile" {
@@ -140,7 +171,16 @@ module "cloud_run_api" {
     R2_BUCKET_NAME                = "cgrs-images-prod"
     R2_DOCUMENTS_BUCKET_NAME      = "cgrs-documents-prod"
     R2_GROUND_REPORTS_BUCKET_NAME = "cgrs-ground-reports-prod"
-    CORS_ORIGINS                  = var.cloud_run_cors_origins
+    # Blog bucket names come from the API's own defaults; these two are the pieces it cannot
+    # know. Neither is secret — the domain is public by definition and the URL is a public
+    # route. Only the shared secret sent to it lives in secret_env_vars.
+    BLOG_CONTENT_DOMAIN = "content.cgrs.co.nz"
+    # `www`, not the apex. The apex 307s to www, and the API's revalidate client does not
+    # follow redirects — it would read the 307 as success (it only treats >=400 as refused)
+    # and report a signal that never arrived. Benign in effect (the post still appears when
+    # the manifest's window lapses) but silently wrong, which is worse than a logged failure.
+    BLOG_REVALIDATE_URL = "https://www.cgrs.co.nz/api/blog/revalidate"
+    CORS_ORIGINS        = var.cloud_run_cors_origins
     # 1, not 2: the service has 1 vCPU, so a second uvicorn worker cannot run in parallel —
     # it only duplicates the app import and contends for the same core. Measured locally at
     # 1 vCPU: 2 workers = 8.52s cold start, 1 worker = 4.89s. FastAPI is async, so one worker
@@ -177,6 +217,22 @@ module "cloud_run_scheduler" {
   labels = var.tags
 
   depends_on = [module.cloud_run_api]
+}
+
+# BigQuery destination for the Cloud Billing Standard usage cost export. Gated so a fresh
+# environment can be stood up without it; note that enabling it here creates the dataset only —
+# linking the billing account to it is a Console-only manual step (see the module comment and
+# environments/prod/README.md).
+module "billing_export" {
+  source = "../modules/billing-export"
+
+  count = var.billing_export_enabled ? 1 : 0
+
+  project_id = var.gcp_project_id
+  location   = var.gcp_region
+  dataset_id = var.billing_export_dataset_id
+
+  labels = var.tags
 }
 
 module "email_dispatch" {
